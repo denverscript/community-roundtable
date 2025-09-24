@@ -18,5 +18,6 @@
 
 ## Discussions
 
+* [September 23rd 2025](./2025-09-23.md)
 * [May 27th 2025](./2025-05-27.md)
 * [January 23rd 2024](./2024-01-23.md)

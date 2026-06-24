@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rockies Traffic Check</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a0a00;
+      border-bottom: 2px solid #333;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #c8a04a;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    header .logo {
+      font-size: 1.5rem;
+    }
+
+    .hero {
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .status-card {
+      display: inline-block;
+      border-radius: 12px;
+      padding: 32px 48px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .status-card.game-today {
+      background: linear-gradient(135deg, #7a1c1c, #4a0000);
+      border: 2px solid #cc3333;
+      box-shadow: 0 0 40px rgba(204, 51, 51, 0.3);
+    }
+
+    .status-card.no-game {
+      background: linear-gradient(135deg, #0f2d1a, #0a1f12);
+      border: 2px solid #2d7a3a;
+      box-shadow: 0 0 40px rgba(45, 122, 58, 0.2);
+    }
+
+    .status-card.loading {
+      background: #1a1a1a;
+      border: 2px solid #333;
+    }
+
+    .status-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    .status-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .status-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .status-card.game-today .status-title { color: #ff6b6b; }
+    .status-card.no-game .status-title { color: #5ec97a; }
+
+    .status-detail {
+      font-size: 0.95rem;
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+
+    .schedule-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    .toggle-btn {
+      background: #222;
+      border: 1px solid #444;
+      color: #aaa;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+    }
+
+    .toggle-btn:hover { background: #2a2a2a; color: #ddd; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      color: #666;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #1a1a1a;
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover { background: #161616; }
+
+    tbody tr.today {
+      background: #1a1200;
+      border-left: 3px solid #c8a04a;
+    }
+
+    tbody tr.today:hover { background: #1f1600; }
+
+    tbody tr.past { opacity: 0.45; }
+
+    td {
+      padding: 10px 12px;
+      vertical-align: middle;
+    }
+
+    .date-cell { white-space: nowrap; }
+    .date-main { font-weight: 600; color: #ddd; }
+    .date-day { font-size: 0.75rem; color: #666; }
+
+    .home-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .home-badge.home { background: #2a1a00; color: #c8a04a; border: 1px solid #4a3000; }
+    .home-badge.away { background: #0d1a2a; color: #6aabdd; border: 1px solid #1a3a5a; }
+
+    .opponent { color: #ddd; }
+
+    .time-cell { color: #aaa; white-space: nowrap; }
+
+    .status-badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-badge.scheduled { color: #888; }
+    .status-badge.live { background: #1a3a1a; color: #5ec97a; border: 1px solid #2a5a2a; }
+    .status-badge.final { color: #555; }
+
+    .score { font-variant-numeric: tabular-nums; color: #bbb; }
+    .score.win { color: #5ec97a; }
+    .score.loss { color: #cc4444; }
+
+    .today-tag {
+      display: inline-block;
+      background: #c8a04a;
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      .status-card { padding: 24px 20px; }
+      .status-title { font-size: 1.4rem; }
+      thead th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">⚾</span>
+  <h1>Rockies Traffic Check</h1>
+</header>
+
+<div class="hero">
+  <div class="status-card loading" id="statusCard">
+    <div class="status-icon">⏳</div>
+    <div class="status-label">Today</div>
+    <div class="status-title">Loading schedule…</div>
+  </div>
+</div>
+
+<div class="schedule-section">
+  <div class="section-header">
+    <span class="section-title" id="scheduleLabel">2026 Schedule</span>
+    <button class="toggle-btn" id="togglePast">Show past games</button>
+  </div>
+  <div id="scheduleContainer"><p class="error-msg">Loading…</p></div>
+</div>
+
+<script>
+  const ROCKIES_ID = 115;
+  const SEASON = new Date().getFullYear();
+  const API = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${ROCKIES_ID}&season=${SEASON}&gameType=R&hydrate=linescore`;
+
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Today in Mountain Time (Denver)
+  function todayMT() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }); // YYYY-MM-DD
+  }
+
+  function formatTimeMT(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString('en-US', {
+      timeZone: 'America/Denver',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }) + ' MT';
+  }
+
+  function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return { main: `${MONTHS[m-1]} ${d}`, day: DAYS[dt.getDay()] };
+  }
+
+  let allGames = [];
+  let showPast = false;
+
+  async function load() {
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      allGames = [];
+      for (const dateObj of (data.dates || [])) {
+        for (const game of (dateObj.games || [])) {
+          allGames.push({ date: dateObj.date, game });
+        }
+      }
+
+      render();
+    } catch (e) {
+      document.getElementById('statusCard').className = 'status-card loading';
+      document.getElementById('statusCard').innerHTML = `
+        <div class="status-icon">⚠️</div>
+        <div class="status-label">Error</div>
+        <div class="status-title">Couldn't load schedule</div>
+        <div class="status-detail">${e.message}</div>`;
+      document.getElementById('scheduleContainer').innerHTML =
+        `<p class="error-msg">Failed to fetch schedule. Check your connection and try refreshing.</p>`;
+    }
+  }
+
+  function isHomeGame(game) {
+    return game.teams?.home?.team?.id === ROCKIES_ID;
+  }
+
+  function render() {
+    const today = todayMT();
+
+    // Find today's home game
+    const todayHomeGame = allGames.find(({ date, game }) => date === today && isHomeGame(game));
+    const todayAnyGame = allGames.find(({ date }) => date === today);
+
+    const card = document.getElementById('statusCard');
+    if (todayHomeGame) {
+      const g = todayHomeGame.game;
+      const opp = g.teams.away.team.name;
+      const time = g.status?.startTimeTBD ? 'TBD' : formatTimeMT(g.gameDate);
+      const state = g.status?.abstractGameState;
+      let detail = `vs. ${opp} · First pitch ${time}`;
+      if (state === 'In Progress') detail = `🔴 LIVE — vs. ${opp}`;
+      else if (state === 'Final') detail = `Game finished — vs. ${opp}`;
+
+      card.className = 'status-card game-today';
+      card.innerHTML = `
+        <div class="status-icon">🚗</div>
+        <div class="status-label">Today · Coors Field</div>
+        <div class="status-title">Expect Traffic</div>
+        <div class="status-detail">${detail}</div>`;
+    } else {
+      card.className = 'status-card no-game';
+      const msg = todayAnyGame ? 'Away game — no Coors Field traffic' : 'No game scheduled today';
+      card.innerHTML = `
+        <div class="status-icon">✅</div>
+        <div class="status-label">Today</div>
+        <div class="status-title">Roads Are Clear</div>
+        <div class="status-detail">${msg}</div>`;
+    }
+
+    renderTable(today);
+  }
+
+  function renderTable(today) {
+    const filtered = showPast ? allGames : allGames.filter(({ date }) => date >= today);
+    document.getElementById('scheduleLabel').textContent =
+      `${SEASON} Schedule${showPast ? '' : ' — Remaining'}`;
+
+    if (filtered.length === 0) {
+      document.getElementById('scheduleContainer').innerHTML =
+        `<p class="error-msg">No games to display.</p>`;
+      return;
+    }
+
+    const rows = filtered.map(({ date, game }) => {
+      const isToday = date === today;
+      const isPast = date < today;
+      const home = isHomeGame(game);
+      const { main, day } = formatDate(date);
+      const opp = home ? game.teams.away.team.name : game.teams.home.team.name;
+      const time = game.status?.startTimeTBD ? 'TBD' : formatTimeMT(game.gameDate);
+      const state = game.status?.abstractGameState || 'Scheduled';
+
+      let statusHtml = '';
+      let scoreHtml = '';
+
+      if (state === 'Final') {
+        const hs = game.teams.home.score ?? '';
+        const as = game.teams.away.score ?? '';
+        const rockiesScore = home ? hs : as;
+        const oppScore = home ? as : hs;
+        const won = game.teams[home ? 'home' : 'away'].isWinner;
+        const cls = won ? 'win' : 'loss';
+        statusHtml = `<span class="status-badge final">Final</span>`;
+        scoreHtml = `<span class="score ${cls}">${rockiesScore}–${oppScore}</span>`;
+      } else if (state === 'In Progress') {
+        statusHtml = `<span class="status-badge live">Live</span>`;
+      } else {
+        statusHtml = `<span class="status-badge scheduled">${time}</span>`;
+      }
+
+      const todayTag = isToday ? `<span class="today-tag">Today</span>` : '';
+      const rowClass = isToday ? 'today' : isPast ? 'past' : '';
+
+      return `<tr class="${rowClass}">
+        <td class="date-cell">
+          <div class="date-main">${main}${todayTag}</div>
+          <div class="date-day">${day}</div>
+        </td>
+        <td><span class="home-badge ${home ? 'home' : 'away'}">${home ? 'Home' : 'Away'}</span></td>
+        <td class="opponent">${opp}</td>
+        <td>${statusHtml}</td>
+        <td>${scoreHtml}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('scheduleContainer').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>H/A</th>
+            <th>Opponent</th>
+            <th>Time / Status</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  document.getElementById('togglePast').addEventListener('click', function () {
+    showPast = !showPast;
+    this.textContent = showPast ? 'Hide past games' : 'Show past games';
+    renderTable(todayMT());
+  });
+
+  load();
+</script>
+</body>
+</html>
